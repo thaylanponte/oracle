@@ -1,36 +1,92 @@
 {
   "meta": {
     "owner": "TI Supermercados",
-    "version": "2025-09-15-1",
-    "description": "Oracle público para consulta pela IA (custos, fórmulas, links, padrões)."
+    "version": "2025-09-15-02",
+    "description": "Oracle público para consulta pela IA (regras de cálculo, links, padrões de projeto e troubleshooting)."
   },
-  "stacks": ["React", "Vite", "Prisma", "PostgreSQL", "Docker"],
+  "stacks": [
+    "React",
+    "Vite",
+    "TypeScript",
+    "Node.js",
+    "Express",
+    "Prisma",
+    "PostgreSQL",
+    "SQLite",
+    "Docker",
+    "Portainer",
+    "Socket.IO"
+  ],
+  "preferencias": {
+    "respostas": [
+      "Enviar ARQUIVOS COMPLETOS, prontos para substituir (sem diffs).",
+      "Comunicação objetiva e com passos acionáveis.",
+      "Quando houver código, incluir caminho exato do arquivo.",
+      "Explicar detalhadamente o código que enviou"
+    ]
+  },
   "sistemas": {
     "CISSPoder": {
+      "contexto": "ERP do varejo. Pontos recorrentes: custo médio, precificação, DIFAL, arredondamentos e validação de NF-e.",
       "regras_custo": {
         "custo_medio_compra": {
-          "descricao": "Média ponderada por quantidade ao dar entrada.",
-          "formula": "CMC = (∑(Qtd_i * CustoUnit_i)) / (∑Qtd_i)",
+          "descricao": "Média ponderada por quantidade na entrada.",
+          "formula_tex": "CMC = (Σ(Qtd_i × CustoUnit_i)) / (Σ Qtd_i)",
           "observacoes": [
-            "Arredondar para 2 casas decimais no final.",
-            "Conferir descontos de item vs total de NF (tolerância R$0,01)."
+            "Arredondar ao final para 2 casas decimais.",
+            "Conferir se a soma dos descontos por item bate com o desconto total da NF (tolerância R$ 0,01).",
+            "Se houver itens isentos, revisar rateios (frete, outros)."
           ],
-          "exemplo": { "entradas": [{"qtd": 10, "custo_unit": 9.71}, {"qtd": 5, "custo_unit": 11.00}], "resultado": 10.14 }
+          "exemplo": {
+            "entradas": [
+              { "qtd": 10, "custo_unit": 9.71 },
+              { "qtd": 5, "custo_unit": 11.00 }
+            ],
+            "resultado_cmc": 10.14
+          }
         },
         "custo_medio_gerencial": {
-          "descricao": "CMC ajustado por impostos/encargos gerenciais (definir quais incidem).",
-          "componentes": ["ICMS próprio", "FCP", "Frete rateado", "Outros"],
+          "descricao": "CMC ajustado por encargos/tributos gerenciais definidos pela operação.",
+          "componentes_possiveis": [
+            "ICMS próprio",
+            "FCP",
+            "Frete rateado",
+            "Outras despesas acessórias"
+          ],
           "observacoes": [
-            "Documentar quais impostos entram no gerencial na sua operação.",
-            "Se item isento, validar manualmente impacto no rateio."
+            "Documentar explicitamente quais componentes entram no gerencial.",
+            "Quando isento, validar impacto no rateio."
           ]
         },
         "difal": {
-          "descricao": "Diferença de alíquota (interestadual -> interna).",
-          "formula_simplificada": "DIFAL = (Base * AliquotaInterna) - (Base * AliquotaInterestadual)",
-          "fcp": "FCP = Base * AliquotaFCP",
-          "exemplo": { "base": 1000, "aliquota_interna": 0.20, "aliquota_interestadual": 0.12, "aliquota_fcp": 0.02, "difal": 80, "fcp": 20 }
+          "descricao": "Diferença de alíquota entre a alíquota interna do destino e a interestadual.",
+          "formula_simplificada": "DIFAL = (Base × AliquotaInterna) − (Base × AliquotaInterestadual)",
+          "fcp": "FCP = Base × AliquotaFCP",
+          "exemplo": {
+            "base": 1000,
+            "aliquota_interna": 0.20,
+            "aliquota_interestadual": 0.12,
+            "aliquota_fcp": 0.02,
+            "difal": 80,
+            "fcp": 20
+          },
+          "observacoes": [
+            "Base de cálculo deve seguir a legislação vigente do estado de destino.",
+            "A reforma tributária a partir de 2026 pode alterar nomenclaturas e estruturas — revisar regras quando entrar em vigor."
+          ]
         }
+      },
+      "nf_e_validacoes": {
+        "desconto_total": "O total de desconto da NF deve ser igual à soma dos descontos dos itens (tolerância R$ 0,01).",
+        "erros_comuns": [
+          "Rejeição por divergência de descontos (total ≠ soma por item).",
+          "Arredondamento feito por item e novamente no total."
+        ],
+        "checklist": [
+          "Validar soma de descontos por item versus total (± R$ 0,01).",
+          "Conferir CFOP e CST/CSOSN dos itens.",
+          "Revisar itens isentos e rateios (frete, seguro, despesas)."
+        ]
       },
       "links": {
         "manual_oficial": "https://SEU-LINK/manual-ciss",
@@ -38,24 +94,115 @@
       }
     },
     "CissPlay": {
-      "ads_refresh_issue": "Anúncios não atualizam automaticamente; forçar revalidação a cada 60s no front como workaround.",
-      "links": { "ticket_interno": "https://SEU-REDMINE/TICKET-123" }
+      "contexto": "Plataforma com anúncios que não atualizam automaticamente.",
+      "ads_refresh_issue": "Workaround: revalidação/refresh a cada ~60s no front até correção definitiva.",
+      "links": {
+        "ticket_interno": "https://SEU-REDMINE/TICKET-123"
+      }
+    }
+  },
+  "projetos": {
+    "guidetti-play": {
+      "topicos": [
+        "Autenticação, integração com API e banco.",
+        "Real-time/chat deve evitar refresh completo de página; usar eventos/Socket.IO."
+      ]
+    },
+    "safe": {
+      "observacoes": [
+        "API Express rodando em Docker.",
+        "Verificar rotas antes de testar endpoints: erro 'Cannot GET /api/users/support' indica rota ausente ou path diferente."
+      ]
+    },
+    "tarefas_trello_like": {
+      "status": "Página estilo Trello (colunas/cards).",
+      "preferencias_ui": [
+        "Layout limpo, UI moderna.",
+        "Quando pedir arquivos, enviar componentes completos."
+      ]
+    }
+  },
+  "troubleshooting": {
+    "prisma": {
+      "erros_comuns": [
+        {
+          "codigo": "P1000",
+          "descricao": "Falha de autenticação no banco (ver env, host, usuário/senha, SCRAM)."
+        },
+        {
+          "codigo": "P2022",
+          "descricao": "Coluna ou relação não existe; fazer migrate e alinhar schema/migrations."
+        }
+      ],
+      "comandos_uteis": [
+        "npx prisma migrate dev -n <nome>",
+        "npx prisma generate"
+      ]
+    },
+    "npm_node": {
+      "conflitos_peer": "ERESOLVE ao instalar pacotes (ex.: React 19 vs libs compatíveis até 18).",
+      "workarounds": [
+        "Ajustar versões compatíveis no package.json.",
+        "Usar --legacy-peer-deps somente como último recurso."
+      ]
+    },
+    "vite_frontend": {
+      "erros": [
+        "Falha ao resolver imports de componentes (ex.: '../ui/button'). Verificar caminhos/aliases e estrutura de pastas."
+      ]
+    },
+    "socket_io": {
+      "erro": "WebSocket is closed before the connection is established.",
+      "checagens": [
+        "URL do servidor Socket correta?",
+        "CORS habilitado no servidor?",
+        "Mesmo namespace/path entre front e back?",
+        "Proxies/HTTPS vs WS/WSS coerentes?"
+      ]
+    },
+    "docker_portainer": {
+      "dicas": [
+        "Ao publicar APIs, expor porta correta e validar saúde via /health.",
+        "Em Compose, mapear volumes somente-leitura para dados estáticos quando possível."
+      ]
     }
   },
   "convencoes": {
     "commits": "feat|fix|chore: mensagem curta + id do ticket",
     "branches": "main, develop, hotfix/*",
-    "deploy": "tag -> CI -> produção (homolog 1º se aplicável)"
+    "deploy": "tag -> CI -> produção (homolog antes quando aplicável)"
   },
   "endpoints": {
-    "api_interna": "https://api.seudominio.com",
-    "statuspage": "https://status.seudominio.com"
+    "oracle_publico": "https://oracle-rp2b.onrender.com",
+    "rotas": {
+      "health": "/health",
+      "oracle": "/oracle",
+      "search": "/oracle/search?q=<termo>",
+      "caminho": "/oracle/<chave1>/<chave2>"
+    }
   },
   "checklists": {
     "entrada_nfe": [
-      "Validar soma de descontos por item vs total (±R$0,01).",
+      "Validar soma de descontos por item vs total (± R$ 0,01).",
       "Itens isentos: revisar rateios.",
-      "Arredondamentos no final do cálculo."
+      "Arredondar no final de cada cálculo.",
+      "Conferir CFOP, CST/CSOSN compatíveis com operação."
+    ],
+    "publicacao_api": [
+      "Definir PORT via env.",
+      "Habilitar CORS conforme domínios.",
+      "Endpoint /health respondendo 200.",
+      "Logs sem erros críticos ao iniciar."
     ]
-  }
+  },
+  "exemplos_excel": {
+    "custo_medio_compra": "=(SOMARPRODUTO(Qtd;CustoUnit))/SOMA(Qtd)",
+    "difal_valor": "=Base*(AliquotaInterna - AliquotaInterestadual)",
+    "fcp_valor": "=Base*AliquotaFCP"
+  },
+  "observacoes_finais": [
+    "Este Oracle NÃO deve conter dados sensíveis (tokens/senhas).",
+    "Quando solicitar cálculos, informar base, alíquotas e regras aplicadas.",
+    "Mantemos este JSON como fonte de verdade para explicações e validações."
+  ]
 }
