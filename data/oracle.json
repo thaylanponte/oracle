@@ -1,7 +1,7 @@
 {
   "meta": {
-    "owner": "TI Supermercados",
-    "version": "2025-09-15-02",
+    "owner": "Oracle TP",
+    "version": "2025-09-15-03",
     "description": "Oracle público para consulta pela IA (regras de cálculo, links, padrões de projeto e troubleshooting)."
   },
   "stacks": [
@@ -21,8 +21,7 @@
     "respostas": [
       "Enviar ARQUIVOS COMPLETOS, prontos para substituir (sem diffs).",
       "Comunicação objetiva e com passos acionáveis.",
-      "Quando houver código, incluir caminho exato do arquivo.",
-      "Explicar detalhadamente o código que enviou"
+      "Quando houver código, incluir caminho exato do arquivo."
     ]
   },
   "sistemas": {
@@ -71,13 +70,20 @@
             "fcp": 20
           },
           "observacoes": [
-            "Base de cálculo deve seguir a legislação vigente do estado de destino.",
+            "Alíquota interestadual comum: 12% (origem Sudeste/Centro-Oeste → destino N/NE) e 7% (origem Sul/Sudeste exceto ES → destino N/NE/CO/ES).",
+            "Base de cálculo deve seguir a legislação do estado de destino.",
             "A reforma tributária a partir de 2026 pode alterar nomenclaturas e estruturas — revisar regras quando entrar em vigor."
           ]
         }
       },
       "nf_e_validacoes": {
         "desconto_total": "O total de desconto da NF deve ser igual à soma dos descontos dos itens (tolerância R$ 0,01).",
+        "rejeicao_999": "Total do desconto da NF difere da soma dos descontos dos itens (tolerância R$ 0,01).",
+        "passos_quickfix": [
+          "Recalcular desconto por item com 2 casas e somar → comparar com total.",
+          "Se divergência ≥ R$ 0,02, revisar rateio: distribuir diferença no item de maior valor.",
+          "Evitar arredondar linha a linha e novamente no total."
+        ],
         "erros_comuns": [
           "Rejeição por divergência de descontos (total ≠ soma por item).",
           "Arredondamento feito por item e novamente no total."
@@ -86,11 +92,11 @@
           "Validar soma de descontos por item versus total (± R$ 0,01).",
           "Conferir CFOP e CST/CSOSN dos itens.",
           "Revisar itens isentos e rateios (frete, seguro, despesas)."
-        ]
-      },
-      "links": {
-        "manual_oficial": "https://SEU-LINK/manual-ciss",
-        "procedimentos_internos": "https://SEU-LINK/wiki/ciss"
+        ],
+        "links": {
+          "manual_oficial": "https://SEU-LINK/manual-ciss",
+          "procedimentos_internos": "https://SEU-LINK/wiki/ciss"
+        }
       }
     },
     "CissPlay": {
@@ -125,18 +131,14 @@
   "troubleshooting": {
     "prisma": {
       "erros_comuns": [
-        {
-          "codigo": "P1000",
-          "descricao": "Falha de autenticação no banco (ver env, host, usuário/senha, SCRAM)."
-        },
-        {
-          "codigo": "P2022",
-          "descricao": "Coluna ou relação não existe; fazer migrate e alinhar schema/migrations."
-        }
+        { "codigo": "P1000", "descricao": "Falha de autenticação no banco (ver env, host, usuário/senha, SCRAM)." },
+        { "codigo": "P2022", "descricao": "Coluna ou relação não existe; fazer migrate e alinhar schema/migrations." }
       ],
       "comandos_uteis": [
-        "npx prisma migrate dev -n <nome>",
-        "npx prisma generate"
+        "npx prisma generate",
+        "npx prisma migrate dev -n ajuste_schema",
+        "npx prisma studio",
+        "DATABASE_URL=postgresql://user:pass@host:5432/db?schema=public"
       ]
     },
     "npm_node": {
@@ -158,6 +160,11 @@
         "CORS habilitado no servidor?",
         "Mesmo namespace/path entre front e back?",
         "Proxies/HTTPS vs WS/WSS coerentes?"
+      ],
+      "https_prod": [
+        "Se front está em HTTPS, use WSS no cliente (ex.: wss://api.seu.com).",
+        "Habilitar CORS no servidor Socket.IO com os domínios do front.",
+        "Atrás de proxy (Nginx/Caddy), encaminhar cabeçalhos Upgrade e Connection: upgrade."
       ]
     },
     "docker_portainer": {
@@ -196,9 +203,10 @@
     ]
   },
   "exemplos_excel": {
-    "custo_medio_compra": "=(SOMARPRODUTO(Qtd;CustoUnit))/SOMA(Qtd)",
+    "custo_medio_compra": "=(SOMARPRODUTO(A2:A100;B2:B100))/SOMA(A2:A100)",
     "difal_valor": "=Base*(AliquotaInterna - AliquotaInterestadual)",
-    "fcp_valor": "=Base*AliquotaFCP"
+    "fcp_valor": "=Base*AliquotaFCP",
+    "preco_off_por_margem": "=Custo/(1-Margem)"
   },
   "observacoes_finais": [
     "Este Oracle NÃO deve conter dados sensíveis (tokens/senhas).",
