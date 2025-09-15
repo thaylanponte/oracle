@@ -1,5 +1,5 @@
 import "dotenv/config";
-import express from "express";
+import express, { type Request, type Response } from "express";
 import cors from "cors";
 import morgan from "morgan";
 import { OracleStore } from "./lib/oracle.js";
@@ -12,7 +12,10 @@ const CORS_ORIGIN = process.env.CORS_ORIGIN ?? "*";
 const app = express();
 app.use(
   cors({
-    origin: CORS_ORIGIN === "*" ? true : CORS_ORIGIN.split(",").map(s => s.trim()),
+    origin:
+      CORS_ORIGIN === "*"
+        ? true
+        : CORS_ORIGIN.split(",").map((s: string) => s.trim()),
     credentials: false
   })
 );
@@ -22,7 +25,7 @@ app.use(morgan("dev"));
 const store = new OracleStore(ORACLE_JSON_PATH);
 
 /** Rota raiz opcional – evita 404 no "/" */
-app.get("/", (_req, res) => {
+app.get("/", (_req: Request, res: Response) => {
   res.type("html").send(`
     <meta charset="utf-8"/>
     <style>
@@ -43,18 +46,18 @@ app.get("/", (_req, res) => {
 });
 
 // Healthcheck
-app.get("/health", (_req, res) => {
+app.get("/health", (_req: Request, res: Response) => {
   res.json({ ok: true, ts: new Date().toISOString() });
 });
 
 // Retorna tudo (com loadedAt)
-app.get("/oracle", (_req, res) => {
+app.get("/oracle", (_req: Request, res: Response) => {
   res.setHeader("Cache-Control", "no-store");
   res.json(store.all());
 });
 
 // Busca simples via query (?q=termo)
-app.get("/oracle/search", (req, res) => {
+app.get("/oracle/search", (req: Request, res: Response) => {
   const q = String(req.query.q ?? "").trim();
   if (!q) return res.status(400).json({ error: "Parâmetro q é obrigatório" });
   const result = store.find(q);
@@ -63,10 +66,10 @@ app.get("/oracle/search", (req, res) => {
 });
 
 // Caminho hierárquico: /oracle/sistemas/CISSPoder/regras_custo
-app.get("/oracle/*", (req, res) => {
+app.get("/oracle/*", (req: Request, res: Response) => {
   const path = (req.params[0] ?? "")
     .split("/")
-    .map(s => s.trim())
+    .map((s: string) => s.trim())
     .filter(Boolean);
   const node = store.getByPath(path);
   if (typeof node === "undefined") {
@@ -77,7 +80,7 @@ app.get("/oracle/*", (req, res) => {
 });
 
 // Reload do arquivo em disco (proteja com token)
-app.post("/admin/reload", (req, res) => {
+app.post("/admin/reload", (req: Request, res: Response) => {
   const token = req.header("x-admin-token") ?? "";
   if (!ORACLE_ADMIN_TOKEN || token !== ORACLE_ADMIN_TOKEN) {
     return res.status(401).json({ error: "Unauthorized" });
