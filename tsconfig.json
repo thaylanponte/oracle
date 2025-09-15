@@ -12,7 +12,8 @@
     "noUncheckedIndexedAccess": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "skipLibCheck": true
   },
   "include": ["src"]
 }
+
+
