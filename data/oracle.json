@@ -1,0 +1,61 @@
+{
+  "meta": {
+    "owner": "TI Supermercados",
+    "version": "2025-09-15-1",
+    "description": "Oracle público para consulta pela IA (custos, fórmulas, links, padrões)."
+  },
+  "stacks": ["React", "Vite", "Prisma", "PostgreSQL", "Docker"],
+  "sistemas": {
+    "CISSPoder": {
+      "regras_custo": {
+        "custo_medio_compra": {
+          "descricao": "Média ponderada por quantidade ao dar entrada.",
+          "formula": "CMC = (∑(Qtd_i * CustoUnit_i)) / (∑Qtd_i)",
+          "observacoes": [
+            "Arredondar para 2 casas decimais no final.",
+            "Conferir descontos de item vs total de NF (tolerância R$0,01)."
+          ],
+          "exemplo": { "entradas": [{"qtd": 10, "custo_unit": 9.71}, {"qtd": 5, "custo_unit": 11.00}], "resultado": 10.14 }
+        },
+        "custo_medio_gerencial": {
+          "descricao": "CMC ajustado por impostos/encargos gerenciais (definir quais incidem).",
+          "componentes": ["ICMS próprio", "FCP", "Frete rateado", "Outros"],
+          "observacoes": [
+            "Documentar quais impostos entram no gerencial na sua operação.",
+            "Se item isento, validar manualmente impacto no rateio."
+          ]
+        },
+        "difal": {
+          "descricao": "Diferença de alíquota (interestadual -> interna).",
+          "formula_simplificada": "DIFAL = (Base * AliquotaInterna) - (Base * AliquotaInterestadual)",
+          "fcp": "FCP = Base * AliquotaFCP",
+          "exemplo": { "base": 1000, "aliquota_interna": 0.20, "aliquota_interestadual": 0.12, "aliquota_fcp": 0.02, "difal": 80, "fcp": 20 }
+        }
+      },
+      "links": {
+        "manual_oficial": "https://SEU-LINK/manual-ciss",
+        "procedimentos_internos": "https://SEU-LINK/wiki/ciss"
+      }
+    },
+    "CissPlay": {
+      "ads_refresh_issue": "Anúncios não atualizam automaticamente; forçar revalidação a cada 60s no front como workaround.",
+      "links": { "ticket_interno": "https://SEU-REDMINE/TICKET-123" }
+    }
+  },
+  "convencoes": {
+    "commits": "feat|fix|chore: mensagem curta + id do ticket",
+    "branches": "main, develop, hotfix/*",
+    "deploy": "tag -> CI -> produção (homolog 1º se aplicável)"
+  },
+  "endpoints": {
+    "api_interna": "https://api.seudominio.com",
+    "statuspage": "https://status.seudominio.com"
+  },
+  "checklists": {
+    "entrada_nfe": [
+      "Validar soma de descontos por item vs total (±R$0,01).",
+      "Itens isentos: revisar rateios.",
+      "Arredondamentos no final do cálculo."
+    ]
+  }
+}
