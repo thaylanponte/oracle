@@ -1,50 +1,32 @@
-import fs from "fs";
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import type { Oracle } from '../types.js';
 
-export type OracleData = Record<string, unknown>;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const dataPath = path.resolve(__dirname, '../../data/oracle.json');
 
-export class OracleStore {
-  private filePath: string;
-  private cache: OracleData;
-  private loadedAt: Date;
+let cache: Oracle | null = null;
+let lastLoaded = 0;
 
-  constructor(filePath: string) {
-    this.filePath = filePath;
-    this.cache = this.loadFromDisk();
-    this.loadedAt = new Date();
+export function loadOracle(force = false): Oracle {
+  const now = Date.now();
+  if (!force && cache && now - lastLoaded < 60_000) return cache; // 60s cache
+
+  const raw = fs.readFileSync(dataPath, 'utf-8');
+  const json = JSON.parse(raw) as Oracle;
+  cache = json;
+  lastLoaded = now;
+  return json;
+}
+
+export function getByPath(obj: unknown, segments: string[]): unknown {
+  let cur: any = obj;
+  for (const seg of segments) {
+    if (cur == null || typeof cur !== 'object') return undefined;
+    if (!(seg in cur)) return undefined;
+    cur = cur[seg];
   }
-
-  private loadFromDisk(): OracleData {
-    const content = fs.readFileSync(this.filePath, "utf-8");
-    return JSON.parse(content) as OracleData;
-  }
-
-  public reload(): { ok: true; loadedAt: string } {
-    this.cache = this.loadFromDisk();
-    this.loadedAt = new Date();
-    return { ok: true, loadedAt: this.loadedAt.toISOString() };
-  }
-
-  public all() {
-    return {
-      loadedAt: this.loadedAt.toISOString(),
-      data: this.cache
-    };
-  }
-
-  public getByPath(path: string[]): unknown {
-    let node: any = this.cache;
-    for (const key of path) {
-      if (node && Object.prototype.hasOwnProperty.call(node, key)) {
-        node = node[key];
-      } else {
-        return undefined;
-      }
-    }
-    return node;
-  }
-
-  public find(q: string): { found: boolean } {
-    const haystack = JSON.stringify(this.cache).toLowerCase();
-    return { found: haystack.includes(q.toLowerCase()) };
-  }
+  return cur;
 }
