@@ -20,10 +20,10 @@ oracleRouter.get('/search', (req, res) => {
 });
 
 // GET /oracle/<chave1>/<chave2>/... -> navega no JSON
-oracleRouter.get('/*', (req, res) => {
-  const path = req.params[0]
-    .split('/')
-    .filter(Boolean);
+oracleRouter.get('/*', (req: express.Request<{ 0: string }>, res) => {
+  const rawPath = req.params[0];
+  const path = rawPath ? rawPath.split('/').filter(Boolean) : [];
+
 
   const data = loadOracle();
   const value = getByPath(data, path);
