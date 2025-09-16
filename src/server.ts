@@ -57,3 +57,8 @@ app.listen(PORT, () => {
   // eslint-disable-next-line no-console
   console.log(`[oracle] listening on port ${PORT}`);
 });
+app.get('/', (_req, res) => {
+  res.json({
+    message: 'Oracle ativo. Use /health, /oracle, /oracle/search?q= ou /oracle/<path>'
+  });
+});
